@@ -1,56 +1,64 @@
 // main.dart
 import 'package:flutter/material.dart';
+import 'package:lotus_news_web/core/network/client_network.dart';
+import 'package:lotus_news_web/features/dashboard/data/data_source/remote_data_source/post_remote_data_source.dart';
+import 'package:lotus_news_web/features/dashboard/data/repositories/post_repository.dart';
+import 'package:lotus_news_web/features/dashboard/domain/repositories/post_repository.dart';
+import 'package:lotus_news_web/features/dashboard/domain/usecases/get_post_usecase.dart';
+import 'package:lotus_news_web/features/dashboard/domain/usecases/update_post_usecase.dart';
+import 'package:lotus_news_web/features/dashboard/presentation/lotus_flow/post_lotus_flow.dart';
 import 'package:provider/provider.dart';
 import 'dart:math';
 
+import 'features/dashboard/data/models/news.dart';
+import 'features/dashboard/presentation/view/create_news_screen.dart';
+import 'features/dashboard/presentation/view/dashboard_screen.dart';
+import 'features/dashboard/presentation/view/news_list_screen.dart';
+
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => ArticleModel(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ArticleModel(),),
+        // Network
+        Provider(create: (context) => ClientNetwork()),
+        // Data Layer
+        Provider<PostRepository>(
+          create: (context) => PostRepositoryImpl(
+              context.read<PostRemoteDataSource>()
+          )
+        ),
+        Provider<PostRepository>(
+          create: (context) => PostRemoteDataSource(client: context.read<ClientNetwork>()),
+        ),
+
+        // Domain Layer (Use Cases)
+        Provider<GetPostUseCase>(
+          create: (context) => GetPostUseCase(
+              context.read<PostRepository>()
+          )
+        ),
+        Provider<UpdatePostUseCase>(
+            create: (context) => UpdatePostUseCase(
+                context.read<PostRepository>()
+            )
+        ),
+
+        // Presentation Layer (BLoc)
+        Provider<PostLotusFlow>(
+          create: (context) => PostLotusFlow(
+              getPostUseCase: context.read<GetPostUseCase>(),
+              updatePostUseCase: context.read<UpdatePostUseCase>()
+          ),
+          dispose: (_, flow) => flow.dispose(),
+        )
+      ],
       child: const NewsDashboardApp(),
     ),
   );
 }
 
-// --- Data Model and State Management (Provider) ---
 
-/// 1. The Article Data Structure
-class Article {
-  final String id;
-  String title;
-  String content;
-  String author;
-  String? imageUrl;
-  final DateTime publicationDate;
-
-  Article({
-    required this.id,
-    required this.title,
-    required this.content,
-    required this.author,
-    this.imageUrl,
-    required this.publicationDate,
-  });
-
-  // Helper method for generating a new Article (used for dummy data)
-  Article copyWith({
-    String? title,
-    String? content,
-    String? author,
-    String? imageUrl,
-  }) {
-    return Article(
-      id: id,
-      title: title ?? this.title,
-      content: content ?? this.content,
-      author: author ?? this.author,
-      imageUrl: imageUrl ?? this.imageUrl,
-      publicationDate: publicationDate,
-    );
-  }
-}
-
-/// 2. The Article Management (CRUD) Model
 class ArticleModel extends ChangeNotifier {
   final List<Article> _articles = [
     Article(
@@ -198,7 +206,7 @@ class _MainScreenState extends State<MainScreen> {
     } else {
       // Tablet/Desktop Layout: Sidebar Navigation
       return Scaffold(
-        appBar: AppBar(title: const Text('News Dashboard - Admin Panel')),
+        appBar: AppBar(title: const Text('Lotus News - Admin Panel')),
         body: Row(
           children: <Widget>[
             // 2.2 Navigation: Sidebar Navigation
@@ -233,498 +241,5 @@ class _MainScreenState extends State<MainScreen> {
         ),
       );
     }
-  }
-}
-
-// --- Dashboard Screen (2.2 Overview) ---
-
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Consumer rebuilds when ArticleModel changes
-    return Consumer<ArticleModel>(
-      builder: (context, model, child) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ListView(
-            children: <Widget>[
-              const Text('Dashboard Overview', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const Divider(),
-              _buildStatsCard(
-                context,
-                icon: Icons.article,
-                title: 'Total Articles',
-                value: model.totalArticles.toString(),
-                color: Colors.blue,
-              ),
-              _buildStatsCard(
-                context,
-                icon: Icons.calendar_today,
-                title: 'Posted Today',
-                value: model.articlesPostedToday.toString(),
-                color: Colors.green,
-              ),
-              _buildStatsCard(
-                context,
-                icon: Icons.calendar_view_week,
-                title: 'Posted This Week',
-                value: model.articlesPostedThisWeek.toString(),
-                color: Colors.orange,
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStatsCard(BuildContext context, {required IconData icon, required String title, required String value, required Color color}) {
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.1),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        trailing: Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color)),
-      ),
-    );
-  }
-}
-
-
-// --- Article List Screen (2.1.2 Read Article List) ---
-
-class ArticleListScreen extends StatelessWidget {
-  final TextEditingController _searchController = TextEditingController();
-
-  ArticleListScreen({super.key});
-
-  // Simple formatter for the publication date
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // The consumer rebuilds when the article list changes
-    return Consumer<ArticleModel>(
-      builder: (context, model, child) {
-        // Simple search/filter implementation (2.1.2 Requirement)
-        final filterText = _searchController.text.toLowerCase();
-        final filteredArticles = model.articles.where((article) {
-          return article.title.toLowerCase().contains(filterText) ||
-              article.author.toLowerCase().contains(filterText);
-        }).toList();
-
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  labelText: 'Search by Title or Author',
-                  prefixIcon: const Icon(Icons.search),
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _searchController.clear();
-                      // Manually notify listener to rebuild the list with empty filter
-                      // A more complex state management would handle this more cleanly.
-                      // For this prototype, we'll force a rebuild via setState in a wrapper if needed,
-                      // but here we just rely on the consumer logic.
-                      model.notifyListeners();
-                    },
-                  ),
-                ),
-                onChanged: (value) {
-                  // This forces the Consumer to rebuild with the new filter text
-                  model.notifyListeners();
-                },
-              ),
-            ),
-            Expanded(
-              child: filteredArticles.isEmpty
-                  ? const Center(child: Text('No articles found.', style: TextStyle(fontSize: 18, color: Colors.grey)))
-                  : ListView.builder(
-                itemCount: filteredArticles.length,
-                itemBuilder: (context, index) {
-                  final article = filteredArticles[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: ListTile(
-                      leading: article.imageUrl != null
-                          ? Image.network(article.imageUrl!, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (c, o, s) => const Icon(Icons.image_not_supported))
-                          : const Icon(Icons.article, size: 40, color: Colors.blueAccent),
-                      title: Text(article.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      // 2.1.2 The list should show the Title, Author, and publication date.
-                      subtitle: Text('By: ${article.author} | Date: ${_formatDate(article.publicationDate)}'),
-                      onTap: () {
-                        // Navigates to the detailed view/edit screen (2.1.3 Update Article)
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => ArticleDetailScreen(article: article),
-                          ),
-                        );
-                      },
-                      // 2.1.4 Delete Article: Available on each article
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _confirmDelete(context, model, article),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // 2.1.4 Delete Article: Confirmation message is required before deletion.
-  void _confirmDelete(BuildContext context, ArticleModel model, Article article) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Confirm Deletion'),
-          content: Text('Are you sure you want to delete the article: "${article.title}"?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                model.deleteArticle(article.id);
-                Navigator.of(dialogContext).pop();
-                // Show a brief success message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Article deleted successfully!')),
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-// --- Create Article Screen (2.1.1 Create Article) ---
-
-class CreateArticleScreen extends StatefulWidget {
-  const CreateArticleScreen({super.key});
-
-  @override
-  State<CreateArticleScreen> createState() => _CreateArticleScreenState();
-}
-
-class _CreateArticleScreenState extends State<CreateArticleScreen> {
-  final _formKey = GlobalKey<FormState>();
-  String _title = '';
-  String _content = '';
-  String _author = '';
-  String? _imageUrl; // Optional
-
-  // 2.1.1 Post button must be available to save the article.
-  void _postArticle(ArticleModel model) {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-
-      final newArticle = Article(
-        // Simple unique ID for the prototype
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: _title,
-        content: _content,
-        author: _author,
-        imageUrl: _imageUrl!.isEmpty ? null : _imageUrl,
-        publicationDate: DateTime.now(),
-      );
-
-      model.addArticle(newArticle);
-
-      // Reset form and show success
-      _formKey.currentState!.reset();
-      setState(() {
-        _imageUrl = null;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Article posted successfully!')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Access the model via Provider
-    final articleModel = Provider.of<ArticleModel>(context, listen: false);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Text('Create New Article', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const Divider(),
-            // 2.1.1 Required fields: Title
-            _buildTextFormField(
-              label: 'Title',
-              validator: (value) => value!.isEmpty ? 'Title is required' : null,
-              onSaved: (value) => _title = value!,
-            ),
-            const SizedBox(height: 12),
-            // 2.1.1 Required fields: Author
-            _buildTextFormField(
-              label: 'Author',
-              validator: (value) => value!.isEmpty ? 'Author is required' : null,
-              onSaved: (value) => _author = value!,
-            ),
-            const SizedBox(height: 12),
-            // 2.1.1 Required fields: Content
-            _buildTextFormField(
-              label: 'Content',
-              maxLines: 8,
-              validator: (value) => value!.isEmpty ? 'Content is required' : null,
-              onSaved: (value) => _content = value!,
-            ),
-            const SizedBox(height: 12),
-            // 2.1.1 Optional fields: Image
-            _buildTextFormField(
-              label: 'Image URL (Optional)',
-              onSaved: (value) => _imageUrl = value,
-              keyboardType: TextInputType.url,
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.send),
-                label: const Text('Post Article', style: TextStyle(fontSize: 18)),
-                onPressed: () => _postArticle(articleModel),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextFormField({
-    required String label,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-    void Function(String?)? onSaved,
-    TextInputType keyboardType = TextInputType.text,
-    String? initialValue,
-  }) {
-    return TextFormField(
-      initialValue: initialValue,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        alignLabelWithHint: true,
-      ),
-      maxLines: maxLines,
-      validator: validator,
-      onSaved: onSaved,
-      keyboardType: keyboardType,
-    );
-  }
-}
-
-// --- Article Detail/Edit Screen (2.1.3 Update Article) ---
-
-class ArticleDetailScreen extends StatefulWidget {
-  final Article article;
-
-  const ArticleDetailScreen({super.key, required this.article});
-
-  @override
-  State<ArticleDetailScreen> createState() => _ArticleDetailScreenState();
-}
-
-class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late String _title;
-  late String _content;
-  late String _author;
-  late String? _imageUrl;
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize state with existing article data
-    _title = widget.article.title;
-    _content = widget.article.content;
-    _author = widget.article.author;
-    _imageUrl = widget.article.imageUrl;
-  }
-
-  // 2.1.3 Save button must be available to update changes.
-  void _saveArticle(ArticleModel model) {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-
-      final updatedArticle = widget.article.copyWith(
-        title: _title,
-        content: _content,
-        author: _author,
-        imageUrl: _imageUrl!.isEmpty ? null : _imageUrl,
-      );
-
-      model.updateArticle(updatedArticle);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Article updated successfully!')),
-      );
-
-      // Pop back to the article list
-      Navigator.of(context).pop();
-    }
-  }
-
-  // 2.1.4 Delete Article: Available on the detailed view screen.
-  void _confirmDelete(BuildContext context, ArticleModel model) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Confirm Deletion'),
-          content: Text('Are you sure you want to delete the article: "${widget.article.title}"?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                model.deleteArticle(widget.article.id);
-                Navigator.of(dialogContext).pop(); // Pop confirmation dialog
-                Navigator.of(context).pop();      // Pop detail screen
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Article deleted successfully!')),
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final articleModel = Provider.of<ArticleModel>(context, listen: false);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Article'),
-        actions: [
-          // 2.1.4 Delete button on detailed view
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () => _confirmDelete(context, articleModel),
-            tooltip: 'Delete Article',
-            color: Colors.redAccent,
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              // Fields are pre-filled with existing data
-              _buildTextFormField(
-                label: 'Title',
-                initialValue: widget.article.title,
-                validator: (value) => value!.isEmpty ? 'Title is required' : null,
-                onSaved: (value) => _title = value!,
-              ),
-              const SizedBox(height: 12),
-              _buildTextFormField(
-                label: 'Author',
-                initialValue: widget.article.author,
-                validator: (value) => value!.isEmpty ? 'Author is required' : null,
-                onSaved: (value) => _author = value!,
-              ),
-              const SizedBox(height: 12),
-              _buildTextFormField(
-                label: 'Content',
-                maxLines: 8,
-                initialValue: widget.article.content,
-                validator: (value) => value!.isEmpty ? 'Content is required' : null,
-                onSaved: (value) => _content = value!,
-              ),
-              const SizedBox(height: 12),
-              _buildTextFormField(
-                label: 'Image URL (Optional)',
-                initialValue: widget.article.imageUrl,
-                onSaved: (value) => _imageUrl = value,
-                keyboardType: TextInputType.url,
-              ),
-              const SizedBox(height: 20),
-              Center(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.save),
-                  label: const Text('Save Changes', style: TextStyle(fontSize: 18)),
-                  onPressed: () => _saveArticle(articleModel),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextFormField({
-    required String label,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-    void Function(String?)? onSaved,
-    TextInputType keyboardType = TextInputType.text,
-    String? initialValue,
-  }) {
-    return TextFormField(
-      initialValue: initialValue,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        alignLabelWithHint: true,
-      ),
-      maxLines: maxLines,
-      validator: validator,
-      onSaved: onSaved,
-      keyboardType: keyboardType,
-    );
   }
 }
