@@ -1,8 +1,5 @@
-
 import 'package:flutter/material.dart';
-import 'package:lotus_news_web/core/network/client_network.dart';
 import 'package:lotus_news_web/features/dashboard/data/models/news.dart';
-import 'package:lotus_news_web/features/dashboard/data/models/post.dart';
 import 'package:lotus_news_web/main.dart';
 import 'package:provider/provider.dart';
 
@@ -66,7 +63,8 @@ class _CreateArticleScreenState extends State<CreateArticleScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Text('Create New Article', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const Text('Create New Article',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const Divider(),
             // 2.1.1 Required fields: Title
             _buildTextFormField(
@@ -78,7 +76,8 @@ class _CreateArticleScreenState extends State<CreateArticleScreen> {
             // 2.1.1 Required fields: Author
             _buildTextFormField(
               label: 'Author',
-              validator: (value) => value!.isEmpty ? 'Author is required' : null,
+              validator: (value) =>
+                  value!.isEmpty ? 'Author is required' : null,
               onSaved: (value) => _author = value!,
             ),
             const SizedBox(height: 12),
@@ -86,7 +85,8 @@ class _CreateArticleScreenState extends State<CreateArticleScreen> {
             _buildTextFormField(
               label: 'Content',
               maxLines: 8,
-              validator: (value) => value!.isEmpty ? 'Content is required' : null,
+              validator: (value) =>
+                  value!.isEmpty ? 'Content is required' : null,
               onSaved: (value) => _content = value!,
             ),
             const SizedBox(height: 12),
@@ -100,10 +100,12 @@ class _CreateArticleScreenState extends State<CreateArticleScreen> {
             Center(
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.send),
-                label: const Text('Post Article', style: TextStyle(fontSize: 18)),
+                label:
+                    const Text('Post Article', style: TextStyle(fontSize: 18)),
                 onPressed: () => _postArticle(articleModel),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 ),
               ),
             ),

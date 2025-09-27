@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 
 class Post {
@@ -52,7 +51,6 @@ class Post {
       'author_username': authorUsername,
       'avatar': avatar,
       'body': body,
-      // Convert DateTime to ISO 8601 string format
       'created_at': createdAt.toIso8601String(),
       'id': id,
       'score': score,
