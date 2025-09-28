@@ -6,9 +6,8 @@ import 'package:lotus_news_web/features/dashboard/data/repositories/post_reposit
 import 'package:lotus_news_web/features/dashboard/domain/repositories/post_repository.dart';
 import 'package:lotus_news_web/features/dashboard/domain/usecases/get_post_usecase.dart';
 import 'package:lotus_news_web/features/dashboard/domain/usecases/update_post_usecase.dart';
-import 'package:lotus_news_web/features/dashboard/presentation/lotus_flow/post_lotus_flow.dart';
+import 'package:lotus_news_web/features/dashboard/presentation/flow/post_flow.dart';
 import 'package:provider/provider.dart';
-import 'dart:math';
 
 import 'features/dashboard/data/models/news.dart';
 import 'features/dashboard/presentation/view/create_news_screen.dart';
@@ -19,37 +18,33 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => ArticleModel(),),
+        ChangeNotifierProvider(
+          create: (context) => ArticleModel(),
+        ),
         // Network
         Provider(create: (context) => ClientNetwork()),
         // Data Layer
         Provider<PostRepository>(
-          create: (context) => PostRepositoryImpl(
-              context.read<PostRemoteDataSource>()
-          )
-        ),
+            create: (context) =>
+                PostRepositoryImpl(context.read<PostRemoteDataSource>())),
         Provider<PostRepository>(
-          create: (context) => PostRemoteDataSource(client: context.read<ClientNetwork>()),
+          create: (context) =>
+              PostRemoteDataSource(client: context.read<ClientNetwork>()),
         ),
 
         // Domain Layer (Use Cases)
         Provider<GetPostUseCase>(
-          create: (context) => GetPostUseCase(
-              context.read<PostRepository>()
-          )
-        ),
+            create: (context) =>
+                GetPostUseCase(context.read<PostRepository>())),
         Provider<UpdatePostUseCase>(
-            create: (context) => UpdatePostUseCase(
-                context.read<PostRepository>()
-            )
-        ),
+            create: (context) =>
+                UpdatePostUseCase(context.read<PostRepository>())),
 
         // Presentation Layer (BLoc)
-        Provider<PostLotusFlow>(
-          create: (context) => PostLotusFlow(
+        Provider<PostFlow>(
+          create: (context) => PostFlow(
               getPostUseCase: context.read<GetPostUseCase>(),
-              updatePostUseCase: context.read<UpdatePostUseCase>()
-          ),
+              updatePostUseCase: context.read<UpdatePostUseCase>()),
           dispose: (_, flow) => flow.dispose(),
         )
       ],
@@ -58,13 +53,13 @@ void main() {
   );
 }
 
-
 class ArticleModel extends ChangeNotifier {
   final List<Article> _articles = [
     Article(
         id: '1',
         title: 'Flutter UI State Management',
-        content: 'Understanding Provider and its role in managing application state...',
+        content:
+            'Understanding Provider and its role in managing application state...',
         author: 'Jane Doe',
         publicationDate: DateTime.now().subtract(const Duration(hours: 3))),
     Article(
@@ -76,7 +71,8 @@ class ArticleModel extends ChangeNotifier {
     Article(
         id: '3',
         title: 'Responsive Design in Flutter',
-        content: 'Ensuring the UI is intuitive and responsive on mobile and tablets...',
+        content:
+            'Ensuring the UI is intuitive and responsive on mobile and tablets...',
         author: 'A. Tester',
         publicationDate: DateTime.now().subtract(const Duration(days: 8))),
   ];
@@ -110,10 +106,8 @@ class ArticleModel extends ChangeNotifier {
 
   // --- Functional Requirement 2.2: Dashboard Overview ---
 
-  // Total number of articles
   int get totalArticles => _articles.length;
 
-  // Articles posted today
   int get articlesPostedToday {
     final today = DateTime.now();
     return _articles.where((article) {
@@ -123,11 +117,12 @@ class ArticleModel extends ChangeNotifier {
     }).length;
   }
 
-  // Articles posted this week (simple implementation)
   int get articlesPostedThisWeek {
     final now = DateTime.now();
     final oneWeekAgo = now.subtract(const Duration(days: 7));
-    return _articles.where((article) => article.publicationDate.isAfter(oneWeekAgo)).length;
+    return _articles
+        .where((article) => article.publicationDate.isAfter(oneWeekAgo))
+        .length;
   }
 }
 
@@ -138,7 +133,6 @@ class NewsDashboardApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Non-Functional Requirement: UI/UX (Theme)
     return MaterialApp(
       title: 'News Dashboard',
       debugShowCheckedModeBanner: false,
@@ -168,9 +162,9 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   static final List<Widget> _widgetOptions = <Widget>[
-    const DashboardScreen(),       // 2.2 Dashboard Overview
-    ArticleListScreen(),           // 2.1.2 Read Article List
-    const CreateArticleScreen(),   // 2.1.1 Create Article
+    const DashboardScreen(), // 2.2 Dashboard Overview
+    ArticleListScreen(), // 2.1.2 Read Article List
+    const CreateArticleScreen(), // 2.1.1 Create Article
   ];
 
   void _onItemTapped(int index) {
@@ -194,8 +188,10 @@ class _MainScreenState extends State<MainScreen> {
         // 2.2 Navigation: Bottom Navigation
         bottomNavigationBar: BottomNavigationBar(
           items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-            BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Articles'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard), label: 'Dashboard'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.list_alt), label: 'Articles'),
             BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Create'),
           ],
           currentIndex: _selectedIndex,

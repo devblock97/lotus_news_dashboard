@@ -1,12 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:lotus_news_web/features/dashboard/data/models/post.dart';
-import 'package:lotus_news_web/features/dashboard/presentation/lotus_flow/post_event.dart';
-import 'package:lotus_news_web/features/dashboard/presentation/lotus_flow/post_lotus_flow.dart';
-import 'package:lotus_news_web/main.dart';
+import 'package:lotus_news_web/features/dashboard/presentation/flow/post_event.dart';
+import 'package:lotus_news_web/features/dashboard/presentation/flow/post_flow.dart';
 import 'package:provider/provider.dart';
-
-import '../../data/models/news.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final Post post;
@@ -18,7 +14,7 @@ class ArticleDetailScreen extends StatefulWidget {
 }
 
 class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
-  late PostLotusFlow _postLotusFlow;
+  late PostFlow _postFlow;
 
   final _formKey = GlobalKey<FormState>();
   late String _title;
@@ -29,7 +25,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _postLotusFlow = Provider.of<PostLotusFlow>(context);
+    _postFlow = Provider.of<PostFlow>(context);
   }
 
   @override
@@ -54,7 +50,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         url: _imageUrl!.isEmpty ? null : _imageUrl,
       );
 
-      _postLotusFlow.eventSink.add(UpdatePostEvent(updatedArticle));
+      _postFlow.eventSink.add(UpdatePostEvent(updatedArticle));
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Article updated successfully!')),
@@ -72,7 +68,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Confirm Deletion'),
-          content: Text('Are you sure you want to delete the article: "${widget.post.title}"?'),
+          content: Text(
+              'Are you sure you want to delete the article: "${widget.post.title}"?'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -84,9 +81,10 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
               onPressed: () {
                 Navigator.of(dialogContext).pop(); // Pop confirmation dialog
-                Navigator.of(context).pop();      // Pop detail screen
+                Navigator.of(context).pop(); // Pop detail screen
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Article deleted successfully!')),
+                  const SnackBar(
+                      content: Text('Article deleted successfully!')),
                 );
               },
             ),
@@ -98,7 +96,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Article'),
@@ -124,14 +121,16 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               _buildTextFormField(
                 label: 'Title',
                 initialValue: widget.post.title,
-                validator: (value) => value!.isEmpty ? 'Title is required' : null,
+                validator: (value) =>
+                    value!.isEmpty ? 'Title is required' : null,
                 onSaved: (value) => _title = value!,
               ),
               const SizedBox(height: 12),
               _buildTextFormField(
                 label: 'Author',
                 initialValue: widget.post.authorUsername,
-                validator: (value) => value!.isEmpty ? 'Author is required' : null,
+                validator: (value) =>
+                    value!.isEmpty ? 'Author is required' : null,
                 onSaved: (value) => _author = value!,
               ),
               const SizedBox(height: 12),
@@ -139,7 +138,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                 label: 'Content',
                 maxLines: 8,
                 initialValue: widget.post.body,
-                validator: (value) => value!.isEmpty ? 'Content is required' : null,
+                validator: (value) =>
+                    value!.isEmpty ? 'Content is required' : null,
                 onSaved: (value) => _content = value!,
               ),
               const SizedBox(height: 12),
@@ -153,11 +153,12 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               Center(
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.save),
-                  label: const Text('Save Changes', style: TextStyle(fontSize: 18)),
-                  onPressed: () => _saveArticle(widget.post)
-                  ,
+                  label: const Text('Save Changes',
+                      style: TextStyle(fontSize: 18)),
+                  onPressed: () => _saveArticle(widget.post),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 40, vertical: 15),
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                   ),

@@ -1,16 +1,22 @@
+import 'dart:developer';
 import 'package:dio/dio.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 typedef AuthHeaderProvider = String? Function();
 
 class ClientNetwork {
-  final Dio _dio;
+  late final Dio _dio;
   final String _host;
 
-  ClientNetwork({String? host, Dio? dio})
-    : _host = host ?? 'http://127.0.0.1:3000/api',
-    _dio = dio ?? Dio() {
-    _dio.options.followRedirects = true;
-    _dio.options.maxRedirects = 5;
+  ClientNetwork({
+    String? host,
+  }) : _host = host ?? 'http://127.0.0.1:3000/api' {
+    _dio = Dio();
+    _dio
+      ..options.baseUrl = _host
+      ..options.connectTimeout = const Duration(milliseconds: 15000)
+      ..interceptors.add(PrettyDioLogger(
+          compact: false, logPrint: (object) => log(object.toString())));
   }
 
   String _buildUrl(String path) {
@@ -22,39 +28,39 @@ class ClientNetwork {
     return url;
   }
 
-  Future<Response<T>> get<T>(
-    String path, {
-    Map<String, dynamic>? queryParams,
-    Map<String, dynamic>? headers}) {
-
-    return _dio.get<T>(
-        _buildUrl(path),
-        queryParameters: queryParams,
-        options: Options(headers: headers)
-    );
+  Future<Response<T>> get<T>(String path,
+      {Map<String, dynamic>? queryParams, Map<String, dynamic>? headers}) {
+    return _dio.get<T>(_buildUrl(path),
+        queryParameters: queryParams, options: Options(headers: headers));
   }
 
-  Future<Response<T>> post<T>(
-    String path, {
+  Future<Response<T>> post<T>(String path,
+      {dynamic data,
       Map<String, dynamic>? queryParams,
       Map<String, dynamic>? headers}) {
-
-    return _dio.post(
-        _buildUrl(path),
+    return _dio.post(_buildUrl(path),
         queryParameters: queryParams,
-        options: Options(headers: headers)
-    );
+        data: data,
+        options: Options(headers: headers));
   }
 
-  Future<Response<T>> put<T>(
-      String path, {
+  Future<Response<T>> put<T>(String path,
+      {dynamic data,
       Map<String, dynamic>? queryParams,
       Map<String, dynamic>? headers}) {
-
-    return _dio.put(
-        _buildUrl(path),
+    return _dio.put(_buildUrl(path),
         queryParameters: queryParams,
-        options: Options(headers: headers)
-    );
+        data: data,
+        options: Options(headers: headers));
+  }
+
+  Future<Response<T>> delete<T>(String path,
+      {dynamic data,
+      Map<String, dynamic>? queryParams,
+      Map<String, dynamic>? headers}) {
+    return _dio.delete(_buildUrl(path),
+        data: data,
+        queryParameters: queryParams,
+        options: Options(headers: headers));
   }
 }

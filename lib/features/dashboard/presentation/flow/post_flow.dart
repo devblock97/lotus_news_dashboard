@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:lotus_news_web/core/utils/app_logger.dart';
 import 'package:lotus_news_web/features/dashboard/data/models/post.dart';
 import 'package:lotus_news_web/features/dashboard/domain/usecases/get_post_usecase.dart';
 import 'package:lotus_news_web/features/dashboard/domain/usecases/update_post_usecase.dart';
-import 'package:lotus_news_web/features/dashboard/presentation/lotus_flow/post_event.dart';
-import 'package:lotus_news_web/features/dashboard/presentation/lotus_flow/post_state.dart';
+import 'package:lotus_news_web/features/dashboard/presentation/flow/post_event.dart';
+import 'package:lotus_news_web/features/dashboard/presentation/flow/post_state.dart';
 import 'package:rxdart/rxdart.dart';
 
-class PostLotusFlow {
+class PostFlow {
   final GetPostUseCase getPostUseCase;
   final UpdatePostUseCase updatePostUseCase;
 
@@ -20,9 +20,8 @@ class PostLotusFlow {
 
   // Internal stream for post list (managed by LotusFlow)
   final _posts = BehaviorSubject<List<Post>>.seeded([]);
-  Stream<List<Post>> get _postsStream => _posts.stream;
 
-  PostLotusFlow({
+  PostFlow({
     required this.getPostUseCase,
     required this.updatePostUseCase,
   }) {
@@ -44,7 +43,8 @@ class PostLotusFlow {
       _posts.add(posts); // Update internal product stream
       _stateController.add(PostLoaded(posts)); // Emit loaded state
     } catch (e, stackTrace) {
-      debugPrint('stack trace error: ${stackTrace.toString()}');
+      logger.e('PostFlow [_loadPost]: ',
+          stackTrace: StackTrace.fromString(stackTrace.toString()));
       _stateController.add(PostError(message: 'Failed to post post: $e'));
     }
   }
@@ -52,8 +52,10 @@ class PostLotusFlow {
   Future<void> _updatePost(Post post) async {
     try {
       await updatePostUseCase(post);
-      final postUpdated = _posts.value.map((p) => p.id == post.id ? post : p).toList();
+      final postUpdated =
+          _posts.value.map((p) => p.id == post.id ? post : p).toList();
       _posts.add(postUpdated);
+      _stateController.add(PostLoaded(postUpdated));
     } catch (e) {
       _stateController.add(PostError(message: 'Failed to update post: $e '));
     }
@@ -64,5 +66,4 @@ class PostLotusFlow {
     _eventController.close();
     _posts.close();
   }
-
 }

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 class AppConstants {
-
   static String baseUrl(bool isAndroid) {
     if (isAndroid) {
       return 'http://10.0.2.2:3000';
@@ -32,11 +31,15 @@ class AppConstants {
 
   static String assistant = 'http://localhost:11434/api/generate';
 
-
   static List<String> categories = [
-    'Tất cả', 'Thể thao', 'Chính trị',
-    'Âm nhạc', 'Sự kiện', 'Công nghệ',
-    'Khoa học', 'Giáo dục'
+    'Tất cả',
+    'Thể thao',
+    'Chính trị',
+    'Âm nhạc',
+    'Sự kiện',
+    'Công nghệ',
+    'Khoa học',
+    'Giáo dục'
   ];
 
   static String baseLLMUrl = 'http://localhost:11434';

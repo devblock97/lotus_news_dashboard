@@ -1,4 +1,3 @@
-
 import 'package:lotus_news_web/features/dashboard/data/models/post.dart';
 
 abstract class PostRepository {
@@ -6,7 +5,7 @@ abstract class PostRepository {
 
   Future<Post> createPost(Post post);
 
-  Future<void> updatePost(Post post);
+  Future<Post> updatePost(Post post);
 
   Future<void> deletePost(Post post);
 }

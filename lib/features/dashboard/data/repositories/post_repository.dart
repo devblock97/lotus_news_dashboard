@@ -1,11 +1,9 @@
-
 import 'package:lotus_news_web/features/dashboard/data/data_source/remote_data_source/post_remote_data_source.dart';
 import 'package:lotus_news_web/features/dashboard/data/models/post.dart';
 
 import '../../domain/repositories/post_repository.dart';
 
 class PostRepositoryImpl implements PostRepository {
-
   final PostRemoteDataSource remoteDataSource;
   PostRepositoryImpl(this.remoteDataSource);
 
@@ -25,8 +23,7 @@ class PostRepositoryImpl implements PostRepository {
   }
 
   @override
-  Future<void> updatePost(Post post) {
+  Future<Post> updatePost(Post post) async {
     return remoteDataSource.updatePost(post);
   }
-
 }
