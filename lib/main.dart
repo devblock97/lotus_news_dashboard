@@ -106,10 +106,8 @@ class ArticleModel extends ChangeNotifier {
 
   // --- Functional Requirement 2.2: Dashboard Overview ---
 
-  // Total number of articles
   int get totalArticles => _articles.length;
 
-  // Articles posted today
   int get articlesPostedToday {
     final today = DateTime.now();
     return _articles.where((article) {
@@ -119,7 +117,6 @@ class ArticleModel extends ChangeNotifier {
     }).length;
   }
 
-  // Articles posted this week (simple implementation)
   int get articlesPostedThisWeek {
     final now = DateTime.now();
     final oneWeekAgo = now.subtract(const Duration(days: 7));
@@ -136,7 +133,6 @@ class NewsDashboardApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Non-Functional Requirement: UI/UX (Theme)
     return MaterialApp(
       title: 'News Dashboard',
       debugShowCheckedModeBanner: false,
