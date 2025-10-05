@@ -1,5 +1,7 @@
 import 'package:lotus_news_web/core/utils/app_logger.dart';
+import 'package:lotus_news_web/features/dashboard/data/models/create_post.dart';
 import 'package:lotus_news_web/features/dashboard/data/models/post.dart';
+import 'package:lotus_news_web/features/dashboard/domain/usecases/create_post_usecase.dart';
 import 'package:lotus_news_web/features/dashboard/domain/usecases/get_post_usecase.dart';
 import 'package:lotus_news_web/features/dashboard/domain/usecases/update_post_usecase.dart';
 import 'package:lotus_news_web/features/dashboard/presentation/flow/post_event.dart';
@@ -9,6 +11,7 @@ import 'package:rxdart/rxdart.dart';
 class PostFlow {
   final GetPostUseCase getPostUseCase;
   final UpdatePostUseCase updatePostUseCase;
+  final CreatePostUseCase createPostUseCase;
 
   // Use BehaviorSubject for state so new subscribers get the latest state immediately
   final _stateController = BehaviorSubject<PostState>.seeded(PostLoading());
@@ -24,6 +27,7 @@ class PostFlow {
   PostFlow({
     required this.getPostUseCase,
     required this.updatePostUseCase,
+    required this.createPostUseCase,
   }) {
     _eventController.listen(_mapEventToState);
   }
@@ -33,6 +37,20 @@ class PostFlow {
       await _loadPosts();
     } else if (event is UpdatePostEvent) {
       await _updatePost(event.post);
+    } else if (event is CreatePostEvent) {
+      await _createPost(event.post);
+    }
+  }
+
+  Future<void> _createPost(CreatePost post) async {
+    _stateController.add(PostLoading());
+    try {
+      final postCreated = await createPostUseCase(post);
+      final updatedPosts = [..._posts.value, postCreated];
+      _posts.add(updatedPosts);
+      _stateController.add(PostLoaded(updatedPosts));
+    } catch (e) {
+      _stateController.add(PostError(message: 'Failed to create post: $e'));
     }
   }
 
@@ -43,8 +61,10 @@ class PostFlow {
       _posts.add(posts); // Update internal product stream
       _stateController.add(PostLoaded(posts)); // Emit loaded state
     } catch (e, stackTrace) {
-      logger.e('PostFlow [_loadPost]: ',
-          stackTrace: StackTrace.fromString(stackTrace.toString()));
+      logger.e(
+        'PostFlow [_loadPost]: ',
+        stackTrace: StackTrace.fromString(stackTrace.toString()),
+      );
       _stateController.add(PostError(message: 'Failed to post post: $e'));
     }
   }
@@ -52,8 +72,9 @@ class PostFlow {
   Future<void> _updatePost(Post post) async {
     try {
       await updatePostUseCase(post);
-      final postUpdated =
-          _posts.value.map((p) => p.id == post.id ? post : p).toList();
+      final postUpdated = _posts.value
+          .map((p) => p.id == post.id ? post : p)
+          .toList();
       _posts.add(postUpdated);
       _stateController.add(PostLoaded(postUpdated));
     } catch (e) {

@@ -69,7 +69,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         return AlertDialog(
           title: const Text('Confirm Deletion'),
           content: Text(
-              'Are you sure you want to delete the article: "${widget.post.title}"?'),
+            'Are you sure you want to delete the article: "${widget.post.title}"?',
+          ),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -84,7 +85,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                 Navigator.of(context).pop(); // Pop detail screen
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text('Article deleted successfully!')),
+                    content: Text('Article deleted successfully!'),
+                  ),
                 );
               },
             ),
@@ -153,12 +155,16 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               Center(
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.save),
-                  label: const Text('Save Changes',
-                      style: TextStyle(fontSize: 18)),
+                  label: const Text(
+                    'Save Changes',
+                    style: TextStyle(fontSize: 18),
+                  ),
                   onPressed: () => _saveArticle(widget.post),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 15),
+                      horizontal: 40,
+                      vertical: 15,
+                    ),
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                   ),

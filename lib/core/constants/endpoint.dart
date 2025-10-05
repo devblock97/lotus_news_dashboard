@@ -1,13 +1,7 @@
 import 'dart:io';
 
 class AppConstants {
-  static String baseUrl(bool isAndroid) {
-    if (isAndroid) {
-      return 'http://10.0.2.2:3000';
-    } else {
-      return 'http://localhost:3000';
-    }
-  }
+  static String baseUrl = 'http://localhost:3000/api';
 
   static String wsUrl(bool isRealDevice) {
     if (isRealDevice) {
@@ -23,7 +17,8 @@ class AppConstants {
 
   static String token = '';
 
-  static String posts = '/api/posts';
+  static String posts = '/posts';
+  static String login = '/login';
 
   static String search(String keyword) {
     return '/api/news/search?q=$keyword';
@@ -39,7 +34,7 @@ class AppConstants {
     'Sự kiện',
     'Công nghệ',
     'Khoa học',
-    'Giáo dục'
+    'Giáo dục',
   ];
 
   static String baseLLMUrl = 'http://localhost:11434';

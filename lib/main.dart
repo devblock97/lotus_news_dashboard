@@ -1,14 +1,25 @@
-// main.dart
 import 'package:flutter/material.dart';
+import 'package:lotus_news_web/core/network/auth_interceptor.dart';
 import 'package:lotus_news_web/core/network/client_network.dart';
+import 'package:lotus_news_web/features/auth/data/data_source/local_data_source/auth_local_data_source.dart';
+import 'package:lotus_news_web/features/auth/data/data_source/remote_data_source/auth_remote_data_source.dart';
+import 'package:lotus_news_web/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:lotus_news_web/features/auth/data/repositories/token_storage_repository.dart';
+import 'package:lotus_news_web/features/auth/domain/repositories/auth_repository.dart';
+import 'package:lotus_news_web/features/auth/domain/repositories/token_storage_repository.dart';
+import 'package:lotus_news_web/features/auth/domain/usecases/login_usecase.dart';
+import 'package:lotus_news_web/features/auth/presentation/flow/auth_flow.dart';
 import 'package:lotus_news_web/features/dashboard/data/data_source/remote_data_source/post_remote_data_source.dart';
-import 'package:lotus_news_web/features/dashboard/data/repositories/post_repository.dart';
+import 'package:lotus_news_web/features/dashboard/data/repositories/post_repository_impl.dart';
+
 import 'package:lotus_news_web/features/dashboard/domain/repositories/post_repository.dart';
+import 'package:lotus_news_web/features/dashboard/domain/usecases/create_post_usecase.dart';
 import 'package:lotus_news_web/features/dashboard/domain/usecases/get_post_usecase.dart';
 import 'package:lotus_news_web/features/dashboard/domain/usecases/update_post_usecase.dart';
 import 'package:lotus_news_web/features/dashboard/presentation/flow/post_flow.dart';
 import 'package:provider/provider.dart';
 
+import 'features/auth/presentation/view/account_screen.dart';
 import 'features/dashboard/data/models/news.dart';
 import 'features/dashboard/presentation/view/create_news_screen.dart';
 import 'features/dashboard/presentation/view/dashboard_screen.dart';
@@ -18,35 +29,77 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (context) => ArticleModel(),
+        ChangeNotifierProvider(create: (context) => ArticleModel()),
+
+        Provider<AuthLocalDataSource>(
+          create: (context) => AuthLocalDataSourceImpl(),
         ),
-        // Network
-        Provider(create: (context) => ClientNetwork()),
-        // Data Layer
-        Provider<PostRepository>(
-            create: (context) =>
-                PostRepositoryImpl(context.read<PostRemoteDataSource>())),
+        Provider<TokenStorageRepository>(
+          create: (context) =>
+              TokenStorageRepositoryImpl(context.read<AuthLocalDataSource>()),
+        ),
+
+        /// Network
+        Provider(
+          create: (context) => AuthInterceptor(
+            tokenStorageRepository: context.read<TokenStorageRepository>(),
+          ),
+        ),
+        Provider(
+          create: (context) =>
+              ClientNetwork(authInterceptor: context.read<AuthInterceptor>()),
+        ),
+
+        /// Data Layer
+        Provider<AuthRemoteDataSource>(
+          create: (context) =>
+              AuthRemoteDataSourceImpl(context.read<ClientNetwork>()),
+        ),
+        Provider<AuthRepository>(
+          create: (context) => AuthRepositoryImpl(
+            context.read<AuthRemoteDataSource>(),
+            context.read<AuthLocalDataSource>(),
+          ),
+        ),
+        Provider<PostRemoteDataSource>(
+          create: (context) =>
+              PostRemoteDataSourceImpl(context.read<ClientNetwork>()),
+        ),
         Provider<PostRepository>(
           create: (context) =>
-              PostRemoteDataSource(client: context.read<ClientNetwork>()),
+              PostRepositoryImpl(context.read<PostRemoteDataSource>()),
         ),
 
-        // Domain Layer (Use Cases)
+        /// Domain Layer (Use Cases)
+        Provider<CreatePostUseCase>(
+          create: (context) =>
+              CreatePostUseCase(context.read<PostRepository>()),
+        ),
         Provider<GetPostUseCase>(
-            create: (context) =>
-                GetPostUseCase(context.read<PostRepository>())),
+          create: (context) => GetPostUseCase(context.read<PostRepository>()),
+        ),
         Provider<UpdatePostUseCase>(
-            create: (context) =>
-                UpdatePostUseCase(context.read<PostRepository>())),
+          create: (context) =>
+              UpdatePostUseCase(context.read<PostRepository>()),
+        ),
+        Provider(
+          create: (context) => LoginUseCase(context.read<AuthRepository>()),
+        ),
 
-        // Presentation Layer (BLoc)
+        /// Presentation Layer (BLoc)
         Provider<PostFlow>(
           create: (context) => PostFlow(
-              getPostUseCase: context.read<GetPostUseCase>(),
-              updatePostUseCase: context.read<UpdatePostUseCase>()),
+            createPostUseCase: context.read<CreatePostUseCase>(),
+            getPostUseCase: context.read<GetPostUseCase>(),
+            updatePostUseCase: context.read<UpdatePostUseCase>(),
+          ),
           dispose: (_, flow) => flow.dispose(),
-        )
+        ),
+        Provider(
+          create: (context) =>
+              AuthFlow(loginUseCase: context.read<LoginUseCase>()),
+          dispose: (_, flow) => flow.dispose(),
+        ),
       ],
       child: const NewsDashboardApp(),
     ),
@@ -56,25 +109,28 @@ void main() {
 class ArticleModel extends ChangeNotifier {
   final List<Article> _articles = [
     Article(
-        id: '1',
-        title: 'Flutter UI State Management',
-        content:
-            'Understanding Provider and its role in managing application state...',
-        author: 'Jane Doe',
-        publicationDate: DateTime.now().subtract(const Duration(hours: 3))),
+      id: '1',
+      title: 'Flutter UI State Management',
+      content:
+          'Understanding Provider and its role in managing application state...',
+      author: 'Jane Doe',
+      publicationDate: DateTime.now().subtract(const Duration(hours: 3)),
+    ),
     Article(
-        id: '2',
-        title: 'Backend with PostgreSQL and Dart',
-        content: 'Connecting a Flutter app to a robust PostgreSQL database...',
-        author: 'John Smith',
-        publicationDate: DateTime.now().subtract(const Duration(days: 2))),
+      id: '2',
+      title: 'Backend with PostgreSQL and Dart',
+      content: 'Connecting a Flutter app to a robust PostgreSQL database...',
+      author: 'John Smith',
+      publicationDate: DateTime.now().subtract(const Duration(days: 2)),
+    ),
     Article(
-        id: '3',
-        title: 'Responsive Design in Flutter',
-        content:
-            'Ensuring the UI is intuitive and responsive on mobile and tablets...',
-        author: 'A. Tester',
-        publicationDate: DateTime.now().subtract(const Duration(days: 8))),
+      id: '3',
+      title: 'Responsive Design in Flutter',
+      content:
+          'Ensuring the UI is intuitive and responsive on mobile and tablets...',
+      author: 'A. Tester',
+      publicationDate: DateTime.now().subtract(const Duration(days: 8)),
+    ),
   ];
 
   List<Article> get articles => _articles;
@@ -126,8 +182,6 @@ class ArticleModel extends ChangeNotifier {
   }
 }
 
-// --- Main Application Widget ---
-
 class NewsDashboardApp extends StatelessWidget {
   const NewsDashboardApp({super.key});
 
@@ -149,8 +203,6 @@ class NewsDashboardApp extends StatelessWidget {
   }
 }
 
-// --- Main Navigation Screen ---
-
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -162,9 +214,10 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   static final List<Widget> _widgetOptions = <Widget>[
-    const DashboardScreen(), // 2.2 Dashboard Overview
-    ArticleListScreen(), // 2.1.2 Read Article List
-    const CreateArticleScreen(), // 2.1.1 Create Article
+    const DashboardScreen(),
+    ArticleListScreen(),
+    const CreateArticleScreen(),
+    const AccountScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -182,17 +235,23 @@ class _MainScreenState extends State<MainScreen> {
       // Mobile Layout: Bottom Navigation
       return Scaffold(
         appBar: AppBar(title: const Text('News Dashboard')),
-        body: Center(
-          child: _widgetOptions.elementAt(_selectedIndex),
-        ),
+        body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
         // 2.2 Navigation: Bottom Navigation
         bottomNavigationBar: BottomNavigationBar(
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard), label: 'Dashboard'),
+              icon: Icon(Icons.dashboard),
+              label: 'Dashboard',
+            ),
             BottomNavigationBarItem(
-                icon: Icon(Icons.list_alt), label: 'Articles'),
+              icon: Icon(Icons.list_alt),
+              label: 'Articles',
+            ),
             BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Create'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              label: 'Account',
+            ),
           ],
           currentIndex: _selectedIndex,
           selectedItemColor: Colors.blueAccent,
@@ -226,13 +285,16 @@ class _MainScreenState extends State<MainScreen> {
                   selectedIcon: Icon(Icons.add_circle),
                   label: Text('Create'),
                 ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.person_outline),
+                  selectedIcon: Icon(Icons.person_outline),
+                  label: Text('Account'),
+                ),
               ],
             ),
             const VerticalDivider(thickness: 1, width: 1),
             // Main content area
-            Expanded(
-              child: _widgetOptions.elementAt(_selectedIndex),
-            ),
+            Expanded(child: _widgetOptions.elementAt(_selectedIndex)),
           ],
         ),
       );

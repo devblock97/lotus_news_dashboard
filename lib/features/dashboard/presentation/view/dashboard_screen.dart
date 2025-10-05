@@ -14,8 +14,10 @@ class DashboardScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16.0),
           child: ListView(
             children: <Widget>[
-              const Text('Dashboard Overview',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const Text(
+                'Dashboard Overview',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
               const Divider(),
               _buildStatsCard(
                 context,
@@ -45,11 +47,13 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsCard(BuildContext context,
-      {required IconData icon,
-      required String title,
-      required String value,
-      required Color color}) {
+  Widget _buildStatsCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -59,9 +63,14 @@ class DashboardScreen extends StatelessWidget {
           child: Icon(icon, color: color),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        trailing: Text(value,
-            style: TextStyle(
-                fontSize: 28, fontWeight: FontWeight.bold, color: color)),
+        trailing: Text(
+          value,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
       ),
     );
   }
