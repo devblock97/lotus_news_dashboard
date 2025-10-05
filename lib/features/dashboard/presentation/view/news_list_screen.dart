@@ -15,7 +15,7 @@ class ArticleListScreen extends StatefulWidget {
 }
 
 class _ArticleListScreenState extends State<ArticleListScreen> {
-  late PostFlow _postLotusFlow;
+  late PostFlow _postFlow;
   final TextEditingController _searchController = TextEditingController();
 
   // Simple formatter for the publication date
@@ -26,8 +26,8 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _postLotusFlow = Provider.of<PostFlow>(context);
-    _postLotusFlow.eventSink.add(LoadPostEvent());
+    _postFlow = Provider.of<PostFlow>(context);
+    _postFlow.eventSink.add(LoadPostEvent());
   }
 
   @override
@@ -61,65 +61,73 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
         ),
         Expanded(
           child: StreamBuilder<PostState>(
-              stream: _postLotusFlow.state,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting ||
-                    snapshot.data is PostLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.data is PostError) {
-                  return Center(
-                    child:
-                        Text('Error: ${(snapshot.data as PostError).message}'),
-                  );
-                } else if (snapshot.data is PostLoaded) {
-                  final posts = (snapshot.data as PostLoaded).posts;
-                  if (posts.isEmpty) {
-                    return const Center(
-                        child: Text('No articles found.',
-                            style:
-                                TextStyle(fontSize: 18, color: Colors.grey)));
-                  }
-                  return ListView.builder(
-                    itemCount: posts.length,
-                    itemBuilder: (context, index) {
-                      final post = posts[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        child: ListTile(
-                          leading: Image.network(post.avatar,
-                              width: 50,
-                              height: 50,
-                              fit: BoxFit.cover,
-                              errorBuilder: (c, o, s) =>
-                                  const Icon(Icons.image_not_supported)),
-                          title: Text(post.title,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
-                          // 2.1.2 The list should show the Title, Author, and publication date.
-                          subtitle: Text(
-                              'By: ${post.authorUsername} | Date: ${_formatDate(post.createdAt)}'),
-                          onTap: () {
-                            // Navigates to the detailed view/edit screen (2.1.3 Update Article)
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ArticleDetailScreen(post: post),
-                              ),
-                            );
-                          },
-                          // 2.1.4 Delete Article: Available on each article
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _confirmDelete(context, post),
-                          ),
-                        ),
-                      );
-                    },
+            stream: _postFlow.state,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting ||
+                  snapshot.data is PostLoading) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.data is PostError) {
+                return Center(
+                  child: Text('Error: ${(snapshot.data as PostError).message}'),
+                );
+              } else if (snapshot.data is PostLoaded) {
+                final posts = (snapshot.data as PostLoaded).posts;
+                if (posts.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No articles found.',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
                   );
                 }
-                return const SizedBox.shrink();
-              }),
+                return ListView.builder(
+                  itemCount: posts.length,
+                  itemBuilder: (context, index) {
+                    final post = posts[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: ListTile(
+                        leading: Image.network(
+                          post.avatar,
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          errorBuilder: (c, o, s) =>
+                              const Icon(Icons.image_not_supported),
+                        ),
+                        title: Text(
+                          post.title,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        // 2.1.2 The list should show the Title, Author, and publication date.
+                        subtitle: Text(
+                          'By: ${post.authorUsername} | Date: ${_formatDate(post.createdAt)}',
+                        ),
+                        onTap: () {
+                          // Navigates to the detailed view/edit screen (2.1.3 Update Article)
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ArticleDetailScreen(post: post),
+                            ),
+                          );
+                        },
+                        // 2.1.4 Delete Article: Available on each article
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _confirmDelete(context, post),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       ],
     );
@@ -133,7 +141,8 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
         return AlertDialog(
           title: const Text('Confirm Deletion'),
           content: Text(
-              'Are you sure you want to delete the article: "${article.title}"?'),
+            'Are you sure you want to delete the article: "${article.title}"?',
+          ),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -148,7 +157,8 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
                 // Show a brief success message
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text('Article deleted successfully!')),
+                    content: Text('Article deleted successfully!'),
+                  ),
                 );
               },
             ),

@@ -8,9 +8,7 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider(
-            create: (context) => ArticleModel(),
-          ),
+          ChangeNotifierProvider(create: (context) => ArticleModel()),
         ],
         child: const NewsDashboardApp(),
       ),
