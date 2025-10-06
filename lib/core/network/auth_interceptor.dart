@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:lotus_news_web/core/utils/app_logger.dart';
 
 import 'package:lotus_news_web/features/auth/domain/repositories/token_storage_repository.dart';
@@ -24,7 +23,6 @@ class AuthInterceptor extends Interceptor {
       }
 
       final authHeader = await _tokenStorageRepository.getAuthorizationHeader();
-      debugPrint('auth header here: $authHeader');
       if (authHeader != null) {
         // options.headers['Content-type'] = 'application/json';
         options.headers['Authorization'] = authHeader;

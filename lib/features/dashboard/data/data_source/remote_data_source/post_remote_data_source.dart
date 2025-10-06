@@ -8,7 +8,7 @@ abstract class PostRemoteDataSource {
   Future<List<Post>> getPosts();
   Future<Post> createPost(CreatePost post);
   Future<Post> updatePost(Post post);
-  Future<void> deletePost(Post post);
+  Future<void> deletePost(String id);
 }
 
 class PostRemoteDataSourceImpl implements PostRemoteDataSource {
@@ -36,8 +36,22 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
   }
 
   @override
-  Future<void> deletePost(Post post) async {
-    throw UnimplementedError('Stub');
+  Future<void> deletePost(String id) async {
+    try {
+      final response = await _client.delete('posts/$id');
+      if (response.statusCode! >= 200 && response.statusCode! <= 299) {
+        logger.d('PostRemoteDataSource [deletePost]: The post was deleted');
+      } else {
+        throw Exception(
+          'PostRemoteDataRemote [deletePost]: Something went wrong',
+        );
+      }
+    } catch (e, stackTrace) {
+      logger.d('PostRemoteDataSource [deletePost]: [$e]');
+      throw Exception(
+        'PostRemoteDataSource [deletePost] - exception: $stackTrace',
+      );
+    }
   }
 
   @override

@@ -133,15 +133,14 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
     );
   }
 
-  // 2.1.4 Delete Article: Confirmation message is required before deletion.
-  void _confirmDelete(BuildContext context, Post article) {
+  void _confirmDelete(BuildContext context, Post post) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Confirm Deletion'),
           content: Text(
-            'Are you sure you want to delete the article: "${article.title}"?',
+            'Are you sure you want to delete the article: "${post.title}"?',
           ),
           actions: <Widget>[
             TextButton(
@@ -153,13 +152,8 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
             TextButton(
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
               onPressed: () {
-                Navigator.of(dialogContext).pop();
-                // Show a brief success message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Article deleted successfully!'),
-                  ),
-                );
+                _postFlow.eventSink.add(DeletePostEvent(id: post.id));
+                Navigator.of(context).pop();
               },
             ),
           ],

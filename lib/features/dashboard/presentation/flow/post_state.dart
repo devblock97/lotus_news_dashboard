@@ -14,6 +14,8 @@ class PostLoaded extends PostState {
   }
 }
 
+class DeletedPost extends PostState {}
+
 class PostError extends PostState {
   final String message;
 
