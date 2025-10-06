@@ -8,10 +8,13 @@ import 'package:lotus_news_web/features/dashboard/presentation/flow/post_event.d
 import 'package:lotus_news_web/features/dashboard/presentation/flow/post_state.dart';
 import 'package:rxdart/rxdart.dart';
 
+import '../../domain/usecases/delete_post_usecase.dart';
+
 class PostFlow {
   final GetPostUseCase getPostUseCase;
   final UpdatePostUseCase updatePostUseCase;
   final CreatePostUseCase createPostUseCase;
+  final DeletePostUseCase deletePostUseCase;
 
   // Use BehaviorSubject for state so new subscribers get the latest state immediately
   final _stateController = BehaviorSubject<PostState>.seeded(PostLoading());
@@ -28,6 +31,7 @@ class PostFlow {
     required this.getPostUseCase,
     required this.updatePostUseCase,
     required this.createPostUseCase,
+    required this.deletePostUseCase,
   }) {
     _eventController.listen(_mapEventToState);
   }
@@ -39,6 +43,8 @@ class PostFlow {
       await _updatePost(event.post);
     } else if (event is CreatePostEvent) {
       await _createPost(event.post);
+    } else if (event is DeletePostEvent) {
+      await _deletePost(event.id);
     }
   }
 
@@ -79,6 +85,16 @@ class PostFlow {
       _stateController.add(PostLoaded(postUpdated));
     } catch (e) {
       _stateController.add(PostError(message: 'Failed to update post: $e '));
+    }
+  }
+
+  Future<void> _deletePost(String id) async {
+    try {
+      await deletePostUseCase(id);
+      _posts.value.removeWhere((p) => p.id == id);
+      _stateController.add(PostLoaded(_posts.value));
+    } catch (e) {
+      _stateController.add(PostError(message: 'Failed to delete post: $e'));
     }
   }
 

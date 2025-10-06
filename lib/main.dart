@@ -14,6 +14,7 @@ import 'package:lotus_news_web/features/dashboard/data/repositories/post_reposit
 
 import 'package:lotus_news_web/features/dashboard/domain/repositories/post_repository.dart';
 import 'package:lotus_news_web/features/dashboard/domain/usecases/create_post_usecase.dart';
+import 'package:lotus_news_web/features/dashboard/domain/usecases/delete_post_usecase.dart';
 import 'package:lotus_news_web/features/dashboard/domain/usecases/get_post_usecase.dart';
 import 'package:lotus_news_web/features/dashboard/domain/usecases/update_post_usecase.dart';
 import 'package:lotus_news_web/features/dashboard/presentation/flow/post_flow.dart';
@@ -85,6 +86,10 @@ void main() {
         Provider(
           create: (context) => LoginUseCase(context.read<AuthRepository>()),
         ),
+        Provider(
+          create: (context) =>
+              DeletePostUseCase(context.read<PostRepository>()),
+        ),
 
         /// Presentation Layer (BLoc)
         Provider<PostFlow>(
@@ -92,6 +97,7 @@ void main() {
             createPostUseCase: context.read<CreatePostUseCase>(),
             getPostUseCase: context.read<GetPostUseCase>(),
             updatePostUseCase: context.read<UpdatePostUseCase>(),
+            deletePostUseCase: context.read<DeletePostUseCase>(),
           ),
           dispose: (_, flow) => flow.dispose(),
         ),

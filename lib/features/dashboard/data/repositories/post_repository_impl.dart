@@ -14,8 +14,8 @@ class PostRepositoryImpl implements PostRepository {
   }
 
   @override
-  Future<void> deletePost(Post post) {
-    throw UnimplementedError();
+  Future<void> deletePost(String id) {
+    return _remoteDataSource.deletePost(id);
   }
 
   @override
